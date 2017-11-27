@@ -8,9 +8,10 @@ import android.view.View;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.orhanobut.hawk.Hawk;
+
 import org.horaapps.leafpic.R;
-import org.horaapps.leafpic.activities.base.ThemedActivity;
-import org.horaapps.leafpic.util.PreferenceUtil;
+import org.horaapps.liz.ThemedActivity;
 
 /**
  * Created by dnld on 12/9/16.
@@ -18,8 +19,8 @@ import org.horaapps.leafpic.util.PreferenceUtil;
 
 public class GeneralSetting extends ThemedSetting {
 
-    public GeneralSetting(ThemedActivity activity, PreferenceUtil SP) {
-        super(activity, SP);
+    public GeneralSetting(ThemedActivity activity) {
+        super(activity);
     }
 
     public void editNumberOfColumns(){
@@ -54,10 +55,10 @@ public class GeneralSetting extends ThemedSetting {
         getActivity().themeSeekBar(barMediaL);
 
         ///PORTRAIT
-        nColFolders.setText(String.valueOf(getSP().getInt("n_columns_folders", 2)));
-        nColMedia.setText(String.valueOf(getSP().getInt("n_columns_media", 3)));
-        barFolders.setProgress(getSP().getInt("n_columns_folders", 2) -1);
-        barMedia.setProgress(getSP().getInt("n_columns_media", 3) -2);
+        nColFolders.setText(String.valueOf(Hawk.get("n_columns_folders", 2)));
+        nColMedia.setText(String.valueOf(Hawk.get("n_columns_media", 3)));
+        barFolders.setProgress(Hawk.get("n_columns_folders", 2) - 1);
+        barMedia.setProgress(Hawk.get("n_columns_media", 3) - 2);
         barFolders.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
@@ -81,10 +82,10 @@ public class GeneralSetting extends ThemedSetting {
         });
 
         ///LANDSCAPE
-        nColFoldersL.setText(String.valueOf(getSP().getInt("n_columns_folders_landscape", 3)));
-        nColMediaL.setText(String.valueOf(getSP().getInt("n_columns_media_landscape", 4)));
-        barFoldersL.setProgress(getSP().getInt("n_columns_folders_landscape", 3) -2);
-        barMediaL.setProgress(getSP().getInt("n_columns_media_landscape", 4) -3);
+        nColFoldersL.setText(String.valueOf(Hawk.get("n_columns_folders_landscape", 3)));
+        nColMediaL.setText(String.valueOf(Hawk.get("n_columns_media_landscape", 4)));
+        barFoldersL.setProgress(Hawk.get("n_columns_folders_landscape", 3) - 2);
+        barMediaL.setProgress(Hawk.get("n_columns_media_landscape", 4) - 3);
         barFoldersL.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
@@ -114,10 +115,10 @@ public class GeneralSetting extends ThemedSetting {
                 int nMedia = Integer.parseInt(nColMedia.getText().toString());
                 int nFoldersL = Integer.parseInt(nColFoldersL.getText().toString());
                 int nMediaL = Integer.parseInt(nColMediaL.getText().toString());
-                getSP().putInt("n_columns_folders", nFolders);
-                getSP().putInt("n_columns_media", nMedia);
-                getSP().putInt("n_columns_folders_landscape", nFoldersL);
-                getSP().putInt("n_columns_media_landscape", nMediaL);
+                Hawk.put("n_columns_folders", nFolders);
+                Hawk.put("n_columns_media", nMedia);
+                Hawk.put("n_columns_folders_landscape", nFoldersL);
+                Hawk.put("n_columns_media_landscape", nMediaL);
             }
         });
         multiColumnDialogBuilder.setNegativeButton(getActivity().getString(R.string.cancel).toUpperCase(), null);

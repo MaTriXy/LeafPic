@@ -12,19 +12,19 @@ import android.widget.ScrollView;
 import android.widget.Toast;
 
 import com.mikepenz.google_material_typeface_library.GoogleMaterial;
+import com.orhanobut.hawk.Hawk;
 
 import org.horaapps.leafpic.R;
-import org.horaapps.leafpic.activities.base.ThemedActivity;
 import org.horaapps.leafpic.settings.CardViewStyleSetting;
 import org.horaapps.leafpic.settings.ColorsSetting;
 import org.horaapps.leafpic.settings.GeneralSetting;
 import org.horaapps.leafpic.settings.MapProviderSetting;
 import org.horaapps.leafpic.settings.SinglePhotoSetting;
-import org.horaapps.leafpic.util.ColorPalette;
-import org.horaapps.leafpic.util.PreferenceUtil;
 import org.horaapps.leafpic.util.Security;
-import org.horaapps.leafpic.util.ViewUtil;
 import org.horaapps.leafpic.views.SettingWithSwitchView;
+import org.horaapps.liz.ColorPalette;
+import org.horaapps.liz.ThemedActivity;
+import org.horaapps.liz.ViewUtil;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -32,7 +32,6 @@ import butterknife.OnClick;
 import butterknife.Unbinder;
 
 public class SettingsActivity extends ThemedActivity {
-    private PreferenceUtil SP;
     private Toolbar toolbar;
 
     @BindView(R.id.option_max_brightness) SettingWithSwitchView optionMaxBrightness;
@@ -55,7 +54,6 @@ public class SettingsActivity extends ThemedActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
-        SP = PreferenceUtil.getInstance(getApplicationContext());
 
         unbinder = ButterKnife.bind(this);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -89,7 +87,7 @@ public class SettingsActivity extends ThemedActivity {
                 });
             } else optionColoredNavbar.setVisibility(View.GONE);
         }
-        ScrollView scrollView = ButterKnife.findById(this, R.id.settingAct_scrollView);
+        ScrollView scrollView = findViewById(R.id.settingAct_scrollView);
         setScrollViewColor(scrollView);
     }
 
@@ -122,47 +120,53 @@ public class SettingsActivity extends ThemedActivity {
 
     @OnClick(R.id.ll_basic_theme)
     public void onChangeThemeClicked(View view) {
-        new ColorsSetting(SettingsActivity.this, SP).chooseBaseTheme();
+        new ColorsSetting(SettingsActivity.this).chooseBaseTheme();
     }
 
     @OnClick(R.id.ll_card_view_style)
     public void onChangeCardViewStyleClicked(View view) {
-        new CardViewStyleSetting(SettingsActivity.this, SP).show();
+        new CardViewStyleSetting(SettingsActivity.this).show();
     }
 
     @OnClick(R.id.ll_security)
     public void onSecurityClicked(View view) {
-        if (Security.isPasswordSet(getApplicationContext())) {
-            Security.askPassword(SettingsActivity.this, new Security.PasswordInterface() {
-                @Override
-                public void onSuccess() {startActivity(new Intent(getApplicationContext(), SecurityActivity.class));}
-                @Override
-                public void onError() {Toast.makeText(getApplicationContext(), R.string.wrong_password, Toast.LENGTH_SHORT).show();}
-            });
-        } else startActivity(new Intent(getApplicationContext(), SecurityActivity.class));
+        if (Security.isPasswordSet()) {
+            askPassword();
+        }else  startActivity(new Intent(getApplicationContext(), SecurityActivity.class));
+    }
+
+    private void askPassword(){
+        Security.authenticateUser(SettingsActivity.this, new Security.AuthCallBack() {
+            @Override
+            public void onAuthenticated() {
+                startActivity(new Intent(getApplicationContext(), SecurityActivity.class));
+            }
+            @Override
+            public void onError() {Toast.makeText(getApplicationContext(), R.string.wrong_password, Toast.LENGTH_SHORT).show();}
+        });
     }
 
     @OnClick(R.id.ll_primaryColor)
     public void onChangePrimaryColorClicked(View view) {
         final int originalColor = getPrimaryColor();
-        new ColorsSetting(SettingsActivity.this, SP).chooseColor(R.string.primary_color, new ColorsSetting.ColorChooser() {
+        new ColorsSetting(SettingsActivity.this).chooseColor(R.string.primary_color, new ColorsSetting.ColorChooser() {
             @Override
             public void onColorSelected(int color) {
-                SP.putInt(getString(R.string.preference_primary_color), color);
+                Hawk.put(getString(R.string.preference_primary_color), color);
                 updateTheme();
                 updateUiElements();
             }
 
             @Override
             public void onDialogDismiss() {
-                SP.putInt(getString(R.string.preference_primary_color), originalColor);
+                Hawk.put(getString(R.string.preference_primary_color), originalColor);
                 updateTheme();
                 updateUiElements();
             }
 
             @Override
             public void onColorChanged(int color) {
-                SP.putInt(getString(R.string.preference_primary_color), color);
+                Hawk.put(getString(R.string.preference_primary_color), color);
                 updateTheme();
                 updateUiElements();
             }
@@ -172,24 +176,24 @@ public class SettingsActivity extends ThemedActivity {
     @OnClick(R.id.ll_accentColor)
     public void onChangeAccentColorClicked(View view) {
         final int originalColor = getAccentColor();
-        new ColorsSetting(SettingsActivity.this, SP).chooseColor(R.string.accent_color, new ColorsSetting.ColorChooser() {
+        new ColorsSetting(SettingsActivity.this).chooseColor(R.string.accent_color, new ColorsSetting.ColorChooser() {
             @Override
             public void onColorSelected(int color) {
-                SP.putInt(getString(R.string.preference_accent_color), color);
+                Hawk.put(getString(R.string.preference_accent_color), color);
                 updateTheme();
                 updateUiElements();
             }
 
             @Override
             public void onDialogDismiss() {
-                SP.putInt(getString(R.string.preference_accent_color), originalColor);
+                Hawk.put(getString(R.string.preference_accent_color), originalColor);
                 updateTheme();
                 updateUiElements();
             }
 
             @Override
             public void onColorChanged(int color) {
-                SP.putInt(getString(R.string.preference_accent_color), color);
+                Hawk.put(getString(R.string.preference_accent_color), color);
                 updateTheme();
                 updateUiElements();
             }
@@ -209,16 +213,16 @@ public class SettingsActivity extends ThemedActivity {
 
     @OnClick(R.id.ll_custom_thirdAct)
     public void onCustomThirdActClicked(View view) {
-        new SinglePhotoSetting(SettingsActivity.this, SP).show();
+        new SinglePhotoSetting(SettingsActivity.this).show();
     }
 
     @OnClick(R.id.ll_map_provider)
     public void onMapProviderClicked(View view) {
-        new MapProviderSetting(SettingsActivity.this, SP).choseProvider();
+        new MapProviderSetting(SettingsActivity.this).choseProvider();
     }
 
     @OnClick(R.id.ll_n_columns)
     public void onChangeColumnsClicked(View view) {
-        new GeneralSetting(SettingsActivity.this, SP).editNumberOfColumns();
+        new GeneralSetting(SettingsActivity.this).editNumberOfColumns();
     }
 }

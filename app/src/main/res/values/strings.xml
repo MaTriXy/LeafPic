@@ -48,6 +48,12 @@
     <string name="date">Date</string>
     <string name="date_taken">Date taken</string>
 
+    <string name="delete_error">Unable to delete this file</string>
+    <string name="rename_error">Unable to rename this file</string>
+    <string name="move_error">Unable to move this file</string>
+    <string name="copy_error">Unable to copy this file</string>
+
+
     <string name="size">Size</string>
     <string name="numeric">As number</string>
     <string name="ascending">Ascending</string>
@@ -109,7 +115,7 @@ and this could make the media inaccessible from other apps. Use the exclude opti
     <string name="send_to">Send to</string>
     <string name="search_menu">search</string>
     <string name="full_resolution">Full resolution</string>
-    <string name="of">of</string>
+    <string name="of">%d of %d</string>
 
     <!-- PALETTE-->
     <string name="palette">Palette</string>
@@ -276,6 +282,12 @@ and this could make the media inaccessible from other apps. Use the exclude opti
         to you for using the app
     </string>
 
+    <!--FINGERPRINT-->
+    <string name="fingerprint_instruction">Place your fingertip on the Home button to verify your identity</string>
+    <string name="fingerprint_instruction_short">Use Fingerprint</string>
+    <string name="fingerprint_alt_mode">Or use password</string>
+    <string name="fingerprint_error">Fingerprint Error</string>
+
     <string name="about_support">Support Development</string>
     <string name="about_support_translate">Translate</string>
     <string name="about_support_translate_sub">Help us to translate LeafPic in more languages.</string>
@@ -300,6 +312,7 @@ and this could make the media inaccessible from other apps. Use the exclude opti
 
     <!--DRAWER ITEMS -->
     <string name="local_folder">Local Folders</string>
+    <string name="all_media">All Media</string>
     <string name="hidden_folder">Hidden Folders</string>
     <string name="tags">Tags</string>
     <string name="timeline">Timeline</string>
@@ -366,8 +379,8 @@ and this could make the media inaccessible from other apps. Use the exclude opti
     <string name="add">Add</string>
     <string name="exclude">Exclude</string>
     <string name="exclude_albums_message">Are you sure you want to exclude the selected
-        albums? \n If you want to exclude the parent of these albums, try excluding only
-    one album. A dropdown there will allow you to select the parent of the folder.</string>
+        albums?\nIf you want to exclude the parent of these albums, keep in mind that selecting
+    one album a dropdown will appear allow you to select the parent of the folder.</string>
     <string name="exclude_album_message">
         By excluding this folder you will also exclude all sub-folders. Below you can find a list
         that allows you to choose a parent, if you have to exclude more folders which are on the same level.
@@ -381,5 +394,8 @@ and this could make the media inaccessible from other apps. Use the exclude opti
     <string name="error_occured_open_media">An error occurred opening this media.</string>
     <string name="error_thumbnail">Unable to find a thumbnail for the album!</string>
     <string name="no_app_to_perform">Unable to found an app to perform this action.</string>
-    <string name="deleting_images">We are thorwing away all your media!</string>
+    <string name="deleting_images">Threw away %d/%d media!</string>
+    <string name="start_slide_show">Start Slideshow</string>
+    <string name="stop_slide_show">Stop Slideshow</string>
+    <string name="errors">Errors</string>
 </resources>

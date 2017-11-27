@@ -20,9 +20,9 @@ import java.util.HashSet;
  */
 public class HandlingAlbums extends SQLiteOpenHelper {
 
-    private static final int DATABASE_VERSION = 8;
-    private static final String DATABASE_NAME = "tracked_albums.db";
-    private static final String TABLE_ALBUMS = "tracked_albums";
+    private static final int DATABASE_VERSION = 12;
+    private static final String DATABASE_NAME = "folders.db";
+    private static final String TABLE_ALBUMS = "folders";
 
     public static final int EXCLUDED = 1;
     public static final int INCLUDED = 2;
@@ -58,10 +58,13 @@ public class HandlingAlbums extends SQLiteOpenHelper {
                 ALBUM_STATUS + " INTEGER, " +
                 ALBUM_SORTING_MODE + " INTEGER, " +
                 ALBUM_SORTING_ORDER + " INTEGER)");
+
+        db.execSQL(String.format("CREATE UNIQUE INDEX idx_path ON %s (%s)", TABLE_ALBUMS, ALBUM_PATH));
     }
 
     @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_ALBUMS);
+        db.execSQL("DROP INDEX IF EXISTS idx_path");
         onCreate(db);
     }
 
@@ -82,9 +85,9 @@ public class HandlingAlbums extends SQLiteOpenHelper {
         db.close();
     }
 
-    private HashSet<String> getExcludedFolders(Context context) {
-        HashSet<String>  list = new HashSet<>();
-        HashSet<File> storageRoots = ContentHelper.getStorageRoots(context);
+    public ArrayList<String> getExcludedFolders(Context context) {
+        ArrayList<String>  list = new ArrayList<>();
+        HashSet<File> storageRoots = StorageHelper.getStorageRoots(context);
         for(File file : storageRoots)
             // it has a lot of garbage
             list.add(new File(file.getPath(), "Android").getPath());
@@ -158,7 +161,8 @@ public class HandlingAlbums extends SQLiteOpenHelper {
     }
 
     private static boolean exist(SQLiteDatabase db, String path) {
-        Cursor cur = db.rawQuery("SELECT EXISTS(SELECT 1 FROM "+TABLE_ALBUMS+" WHERE "+ALBUM_PATH+"=? LIMIT 1);",
+        Cursor cur = db.rawQuery(
+                String.format("SELECT EXISTS(SELECT 1 FROM %s WHERE %s=? LIMIT 1)", TABLE_ALBUMS, ALBUM_PATH),
                 new String[]{ path });
         boolean tracked = cur.moveToFirst() &&  cur.getInt(0) == 1;
         cur.close();
@@ -177,13 +181,13 @@ public class HandlingAlbums extends SQLiteOpenHelper {
         setValue(path, values);
     }
 
-    void setSortingMode(String path, int column) {
+    public void setSortingMode(String path, int column) {
         ContentValues values = new ContentValues();
         values.put(ALBUM_SORTING_MODE, column);
         setValue(path, values);
     }
 
-    void setSortingOrder(String path, int sortingOrder) {
+    public void setSortingOrder(String path, int sortingOrder) {
         ContentValues values = new ContentValues();
         values.put(ALBUM_SORTING_ORDER, sortingOrder);
         setValue(path, values);

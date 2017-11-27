@@ -8,17 +8,19 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
 
+import com.mikepenz.iconics.view.IconicsImageView;
+
 import org.horaapps.leafpic.R;
-import org.horaapps.leafpic.activities.base.ThemedActivity;
-import org.horaapps.leafpic.util.ColorPalette;
-import org.horaapps.leafpic.util.PreferenceUtil;
+import org.horaapps.liz.ColorPalette;
+import org.horaapps.liz.ThemedActivity;
 
 import uz.shift.colorpicker.LineColorPicker;
 import uz.shift.colorpicker.OnColorChangedListener;
 
-import static org.horaapps.leafpic.util.Theme.AMOLED;
-import static org.horaapps.leafpic.util.Theme.DARK;
-import static org.horaapps.leafpic.util.Theme.LIGHT;
+import static org.horaapps.liz.Theme.AMOLED;
+import static org.horaapps.liz.Theme.DARK;
+import static org.horaapps.liz.Theme.LIGHT;
+
 
 /**
  * Created by dnld on 12/9/16.
@@ -26,8 +28,8 @@ import static org.horaapps.leafpic.util.Theme.LIGHT;
 
 public class ColorsSetting extends ThemedSetting {
 
-    public ColorsSetting(ThemedActivity activity, PreferenceUtil SP) {
-        super(activity, SP);
+    public ColorsSetting(ThemedActivity activity) {
+        super(activity);
     }
 
     public void chooseBaseTheme() {
@@ -61,6 +63,9 @@ public class ColorsSetting extends ThemedSetting {
                 dialog.dismiss();
             }
         };
+        ((IconicsImageView) dialogLayout.findViewById(R.id.white_basic_theme_icon)).setColor(getActivity().getIconColor());
+        ((IconicsImageView) dialogLayout.findViewById(R.id.dark_basic_theme_icon)).setColor(getActivity().getIconColor());
+        ((IconicsImageView) dialogLayout.findViewById(R.id.dark_amoled_basic_theme_icon)).setColor(getActivity().getIconColor());
         dialogLayout.findViewById(R.id.ll_white_basic_theme).setOnClickListener(listener);
         dialogLayout.findViewById(R.id.ll_dark_basic_theme).setOnClickListener(listener);
         dialogLayout.findViewById(R.id.ll_dark_amoled_basic_theme).setOnClickListener(listener);

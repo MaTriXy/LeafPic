@@ -15,18 +15,19 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.orhanobut.hawk.Hawk;
 
+import org.horaapps.leafpic.CardViewStyle;
 import org.horaapps.leafpic.R;
-import org.horaapps.leafpic.activities.base.ThemedActivity;
-import org.horaapps.leafpic.util.CardViewStyle;
-import org.horaapps.leafpic.util.ColorPalette;
-import org.horaapps.leafpic.util.PreferenceUtil;
 import org.horaapps.leafpic.util.StringUtils;
-import org.horaapps.leafpic.util.Theme;
+import org.horaapps.liz.ColorPalette;
+import org.horaapps.liz.Theme;
+import org.horaapps.liz.ThemedActivity;
 
-import static org.horaapps.leafpic.util.CardViewStyle.COMPACT;
-import static org.horaapps.leafpic.util.CardViewStyle.FLAT;
-import static org.horaapps.leafpic.util.CardViewStyle.MATERIAL;
+import static org.horaapps.leafpic.CardViewStyle.COMPACT;
+import static org.horaapps.leafpic.CardViewStyle.FLAT;
+import static org.horaapps.leafpic.CardViewStyle.MATERIAL;
+
 
 /**
  * Created by dnld on 12/9/16.
@@ -34,8 +35,8 @@ import static org.horaapps.leafpic.util.CardViewStyle.MATERIAL;
 
 public class CardViewStyleSetting extends ThemedSetting {
 
-    public CardViewStyleSetting(ThemedActivity activity, PreferenceUtil SP) {
-        super(activity, SP);
+    public CardViewStyleSetting(ThemedActivity activity) {
+        super(activity);
     }
 
     public void show() {
@@ -53,8 +54,8 @@ public class CardViewStyleSetting extends ThemedSetting {
         RadioButton rFlat = (RadioButton) dialogLayout.findViewById(R.id.radio_card_flat);
         RadioButton rMaterial = (RadioButton) dialogLayout.findViewById(R.id.radio_card_material);
 
-        chkShowMediaCount.setChecked(getSP().getBoolean("show_media_count", true));
-        chkShowAlbumPath.setChecked(getSP().getBoolean("show_album_path", false));
+        chkShowMediaCount.setChecked(Hawk.get("show_media_count", true));
+        chkShowAlbumPath.setChecked(Hawk.get("show_album_path", false));
 
         getActivity().themeRadioButton(rCompact);
         getActivity().themeRadioButton(rFlat);
@@ -128,7 +129,7 @@ public class CardViewStyleSetting extends ThemedSetting {
             }
         });
 
-        switch (CardViewStyle.fromValue(getSP().getInt("card_view_style", 0))) {
+        switch (CardViewStyle.fromValue(Hawk.get("card_view_style", 0))) {
             case COMPACT: rCompact.setChecked(true); break;
             case FLAT: rFlat.setChecked(true); break;
             case MATERIAL: default: rMaterial.setChecked(true); break;
@@ -140,12 +141,18 @@ public class CardViewStyleSetting extends ThemedSetting {
             public void onClick(DialogInterface dialog, int which) {
                 switch (rGroup.getCheckedRadioButtonId()) {
                     case R.id.radio_card_material:
-                    default: getSP().putInt("card_view_style", CardViewStyle.MATERIAL.getValue()); break;
-                    case R.id.radio_card_flat: getSP().putInt("card_view_style", CardViewStyle.FLAT.getValue()); break;
-                    case R.id.radio_card_compact: getSP().putInt("card_view_style", CardViewStyle.COMPACT.getValue()); break;
+                    default:
+                        Hawk.put("card_view_style", MATERIAL.getValue());
+                        break;
+                    case R.id.radio_card_flat:
+                        Hawk.put("card_view_style", FLAT.getValue());
+                        break;
+                    case R.id.radio_card_compact:
+                        Hawk.put("card_view_style", COMPACT.getValue());
+                        break;
                 }
-                getSP().putBoolean("show_media_count", chkShowMediaCount.isChecked());
-                getSP().putBoolean("show_album_path", chkShowAlbumPath.isChecked());
+                Hawk.put("show_media_count", chkShowMediaCount.isChecked());
+                Hawk.put("show_album_path", chkShowAlbumPath.isChecked());
                 Toast.makeText(getActivity(), getActivity().getString(R.string.card_style_alert), Toast.LENGTH_SHORT).show();
             }
         });

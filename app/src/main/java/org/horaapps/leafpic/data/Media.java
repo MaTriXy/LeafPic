@@ -10,11 +10,10 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.provider.MediaStore;
 
+import com.bumptech.glide.signature.ObjectKey;
 import com.drew.lang.GeoLocation;
 import com.drew.lang.annotations.NotNull;
 
-import org.horaapps.leafpic.new_way.CursorHandler;
-import org.horaapps.leafpic.util.MediaSignature;
 import org.horaapps.leafpic.util.StringUtils;
 
 import java.io.File;
@@ -54,10 +53,10 @@ public class Media implements CursorHandler, Parcelable {
         this(path, -1);
     }
 
-    public Media(Context context, Uri mediaUri) {
+    public Media(Uri mediaUri) {
         this.uriString = mediaUri.toString();
         this.path = null;
-        this.mimeType = context.getContentResolver().getType(getUri());
+        this.mimeType = StringUtils.getMimeType(uriString);
     }
 
     public Media(@NotNull Cursor cur) {
@@ -141,9 +140,8 @@ public class Media implements CursorHandler, Parcelable {
     }
 
 
-
-    public MediaSignature getSignature() {
-        return new MediaSignature(this);
+    public ObjectKey getSignature() {
+        return new ObjectKey(getDateModified() + getPath() + getOrientation());
     }
 
     public int getOrientation() {
@@ -189,6 +187,14 @@ public class Media implements CursorHandler, Parcelable {
             }
         }).start();
         return true;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Media)
+            return getPath().equals(((Media) obj).getPath());
+
+        return super.equals(obj);
     }
 
     @Deprecated

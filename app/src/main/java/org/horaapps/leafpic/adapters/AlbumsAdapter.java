@@ -1,12 +1,10 @@
 package org.horaapps.leafpic.adapters;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.v7.widget.CardView;
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,24 +12,29 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.Priority;
+import com.bumptech.glide.load.DecodeFormat;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.RequestOptions;
+import com.mikepenz.iconics.view.IconicsImageView;
+import com.orhanobut.hawk.Hawk;
 
+import org.horaapps.leafpic.CardViewStyle;
 import org.horaapps.leafpic.R;
 import org.horaapps.leafpic.data.Album;
 import org.horaapps.leafpic.data.Media;
 import org.horaapps.leafpic.data.sort.AlbumsComparators;
 import org.horaapps.leafpic.data.sort.SortingMode;
 import org.horaapps.leafpic.data.sort.SortingOrder;
-import org.horaapps.leafpic.util.CardViewStyle;
-import org.horaapps.leafpic.util.ColorPalette;
-import org.horaapps.leafpic.util.PreferenceUtil;
 import org.horaapps.leafpic.util.StringUtils;
-import org.horaapps.leafpic.util.Theme;
-import org.horaapps.leafpic.util.ThemeHelper;
+import org.horaapps.liz.ColorPalette;
+import org.horaapps.liz.Theme;
+import org.horaapps.liz.ThemeHelper;
+import org.horaapps.liz.ThemedAdapter;
+import org.horaapps.liz.ThemedViewHolder;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,7 +46,7 @@ import io.reactivex.subjects.PublishSubject;
 /**
  * Created by dnld on 1/7/16.
  */
-public class AlbumsAdapter extends RecyclerView.Adapter<AlbumsAdapter.ViewHolder> {
+public class AlbumsAdapter extends ThemedAdapter<AlbumsAdapter.ViewHolder> {
 
     private List<Album> albums;
 
@@ -55,17 +58,16 @@ public class AlbumsAdapter extends RecyclerView.Adapter<AlbumsAdapter.ViewHolder
     private SortingOrder sortingOrder;
     private SortingMode sortingMode;
 
-    private ThemeHelper theme;
-    private BitmapDrawable placeholder;
+    private Drawable placeholder;
     private CardViewStyle cvs;
-    Context context;
 
     public AlbumsAdapter(Context context, SortingMode sortingMode, SortingOrder sortingOrder) {
+        super(context);
         albums = new ArrayList<>();
-        updateTheme(ThemeHelper.getThemeHelper(context));
+        placeholder = getThemeHelper().getPlaceHolder();
+        cvs = CardViewStyle.fromValue(Hawk.get("card_view_style", 0));
         this.sortingMode = sortingMode;
         this.sortingOrder = sortingOrder;
-        this.context = context;
     }
 
     public void sort() {
@@ -78,6 +80,16 @@ public class AlbumsAdapter extends RecyclerView.Adapter<AlbumsAdapter.ViewHolder
             reverseOrder();*/
 
         notifyDataSetChanged();
+    }
+
+    public List<String> getAlbumsPaths() {
+        ArrayList<String> list = new ArrayList<>();
+
+        for (Album album : albums) {
+            list.add(album.getPath());
+        }
+
+        return list;
     }
 
     public void notifyItemChanaged(Album album) {
@@ -140,6 +152,40 @@ public class AlbumsAdapter extends RecyclerView.Adapter<AlbumsAdapter.ViewHolder
         onChangeSelectedSubject.onNext(Album.getEmptyAlbum());
     }
 
+    public void removeSelectedAlbums(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+            albums.removeIf(Album::isSelected);
+        else {
+            Iterator<Album> iter = albums.iterator();
+
+            while (iter.hasNext()) {
+                Album album = iter.next();
+
+                if (album.isSelected())
+                    iter.remove();
+            }
+        }
+        selectedCount = 0;
+        notifyDataSetChanged();
+    }
+
+    public void removeAlbumsThatStartsWith(String path){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+            albums.removeIf(album -> album.getPath().startsWith(path));
+        else {
+            Iterator<Album> iter = albums.iterator();
+
+            while (iter.hasNext()) {
+                Album album = iter.next();
+
+                if (album.getPath().startsWith(path))
+                    iter.remove();
+            }
+        }
+
+        notifyDataSetChanged();
+    }
+
     public void clearSelected() {
         for (int i = 0; i < albums.size(); i++)
             if (albums.get(i).setSelected(false))
@@ -148,10 +194,16 @@ public class AlbumsAdapter extends RecyclerView.Adapter<AlbumsAdapter.ViewHolder
         onChangeSelectedSubject.onNext(Album.getEmptyAlbum());
     }
 
-    public void updateTheme(ThemeHelper theme) {
-        this.theme = theme;
-        placeholder = ((BitmapDrawable) theme.getPlaceHolder());
-        cvs = theme.getCardViewStyle();
+    public void forceSelectedCount(int count) {
+        selectedCount = count;
+    }
+
+    @Override
+    public void refreshTheme(ThemeHelper theme) {
+        placeholder = theme.getPlaceHolder();
+
+        cvs = CardViewStyle.fromValue(Hawk.get("card_view_style", 0));
+        super.refreshTheme(theme);
     }
 
     @Override
@@ -186,60 +238,42 @@ public class AlbumsAdapter extends RecyclerView.Adapter<AlbumsAdapter.ViewHolder
     public void onBindViewHolder(final AlbumsAdapter.ViewHolder holder, int position) {
 
         Album a = albums.get(position);
+        holder.refreshTheme(getThemeHelper(), cvs, a.isSelected());
 
         Media f = a.getCover();
 
+        RequestOptions options = new RequestOptions()
+                .signature(f.getSignature())
+                .format(DecodeFormat.PREFER_ARGB_8888)
+                .centerCrop()
+                .placeholder(placeholder)
+                .error(org.horaapps.leafpic.R.drawable.ic_error)
+                //.animate(R.anim.fade_in)//TODO:DONT WORK WELL
+                .diskCacheStrategy(DiskCacheStrategy.RESOURCE);
+
         Glide.with(holder.picture.getContext())
                 .load(f.getPath())
-                .asBitmap()
-                .diskCacheStrategy(DiskCacheStrategy.RESULT)
-                .priority(Priority.HIGH)
-                .signature(f.getSignature())
-                .centerCrop()
-                .error(org.horaapps.leafpic.R.drawable.ic_error)
-                .placeholder(placeholder)
-                //.animate(org.horaapps.leafpic.R.anim.fade_in)
+                .apply(options)
                 .into(holder.picture);
 
-        //holder.name.setTag(a);
 
-        String hexPrimaryColor = ColorPalette.getHexColor(theme.getPrimaryColor());
-        String hexAccentColor = ColorPalette.getHexColor(theme.getAccentColor());
+        int accentColor = getThemeHelper().getAccentColor();
 
-        if (hexAccentColor.equals(hexPrimaryColor))
-            hexAccentColor = ColorPalette.getHexColor(ColorPalette.getDarkerColor(theme.getAccentColor()));
+        if (accentColor == getThemeHelper().getPrimaryColor())
+            accentColor = ColorPalette.getDarkerColor(accentColor);
 
-        // TODO: 4/4/17 use ints
-        String textColor = theme.getBaseTheme().equals(Theme.LIGHT) ? "#2B2B2B" : "#FAFAFA";
+        int textColor = getThemeHelper().getColor(getThemeHelper().getBaseTheme().equals(Theme.LIGHT) ? R.color.md_album_color_2 : R.color.md_album_color);
 
-        if (a.isSelected()) {
-            holder.footer.setBackgroundColor(Color.parseColor(hexPrimaryColor));
-            holder.picture.setColorFilter(0x77000000, PorterDuff.Mode.SRC_ATOP);
-            holder.selectedIcon.setVisibility(View.VISIBLE);
-            if (theme.getBaseTheme().equals(Theme.LIGHT)) textColor = "#FAFAFA";
-        } else {
-            holder.picture.clearColorFilter();
-            holder.selectedIcon.setVisibility(View.GONE);
-            switch (cvs){
-                default:
-                case MATERIAL:holder.footer.setBackgroundColor(theme.getCardBackgroundColor());break;
-                case FLAT:
-                case COMPACT:holder.footer.setBackgroundColor(ColorPalette.getTransparentColor(theme.getBackgroundColor(), 150)); break;
-            }
-        }
+        if (a.isSelected())
+            textColor = getThemeHelper().getColor(R.color.md_album_color);
 
-        holder.llCount.setVisibility(PreferenceUtil.getBool(holder.llCount.getContext(), "show_n_photos", true) ? View.VISIBLE : View.GONE);
+        holder.mediaLabel.setTextColor(textColor);
 
-        holder.mediaLabel.setTextColor(theme.getTextColor());
-
+        holder.llCount.setVisibility(Hawk.get("show_n_photos", true) ? View.VISIBLE : View.GONE);
         holder.name.setText(StringUtils.htmlFormat(a.getName(), textColor, false, true));
-        holder.nMedia.setText(StringUtils.htmlFormat(String.valueOf(a.getCount()), hexAccentColor, true, false));
-
-        holder.path.setVisibility(PreferenceUtil.getBool(holder.path.getContext(),"show_album_path", false) ? View.VISIBLE : View.GONE);
-
-        holder.path.setTextColor(theme.getSubTextColor());
+        holder.nMedia.setText(StringUtils.htmlFormat(String.valueOf(a.getCount()), accentColor, true, false));
+        holder.path.setVisibility(Hawk.get("show_album_path", false) ? View.VISIBLE : View.GONE);
         holder.path.setText(a.getPath());
-        //holder.path.setSelected(true);
 
         //START Animation MAKES BUG ON FAST TAP ON CARD
         //Animation anim;
@@ -297,11 +331,11 @@ public class AlbumsAdapter extends RecyclerView.Adapter<AlbumsAdapter.ViewHolder
     }
 
 
-    static class ViewHolder extends RecyclerView.ViewHolder {
+    static class ViewHolder extends ThemedViewHolder {
 
         @BindView(R.id.album_card) CardView card;
         @BindView(R.id.album_preview) ImageView picture;
-        @BindView(R.id.selected_icon) View selectedIcon;
+        @BindView(R.id.selected_icon) IconicsImageView selectedIcon;
         @BindView(R.id.ll_album_info) View footer;
         @BindView(R.id.ll_media_count) View llCount;
         @BindView(R.id.album_name) TextView name;
@@ -312,6 +346,34 @@ public class AlbumsAdapter extends RecyclerView.Adapter<AlbumsAdapter.ViewHolder
         ViewHolder(View itemView) {
             super(itemView);
             ButterKnife.bind(this, itemView);
+        }
+
+        public void refreshTheme(ThemeHelper theme, CardViewStyle cvs, boolean selected) {
+
+            if (selected) {
+                footer.setBackgroundColor(theme.getPrimaryColor());
+                picture.setColorFilter(0x77000000, PorterDuff.Mode.SRC_ATOP);
+                selectedIcon.setVisibility(View.VISIBLE);
+                selectedIcon.setColor(theme.getPrimaryColor());
+            } else {
+                picture.clearColorFilter();
+                selectedIcon.setVisibility(View.GONE);
+                switch (cvs) {
+                    default: case MATERIAL:
+                        footer.setBackgroundColor(theme.getCardBackgroundColor());
+                        break;
+                    case FLAT: case COMPACT:
+                        footer.setBackgroundColor(ColorPalette.getTransparentColor(theme.getBackgroundColor(), 150));
+                        break;
+                }
+            }
+
+            path.setTextColor(theme.getSubTextColor());
+        }
+
+        @Override
+        public void refreshTheme(ThemeHelper themeHelper) {
+
         }
     }
 }

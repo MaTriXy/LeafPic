@@ -1,11 +1,11 @@
 package org.horaapps.leafpic.adapters;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,24 +13,26 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DecodeFormat;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.RequestOptions;
 import com.koushikdutta.ion.Ion;
 import com.mikepenz.community_material_typeface_library.CommunityMaterial;
 import com.mikepenz.iconics.view.IconicsImageView;
 
 import org.horaapps.leafpic.R;
+import org.horaapps.leafpic.data.Album;
 import org.horaapps.leafpic.data.Media;
 import org.horaapps.leafpic.data.sort.MediaComparators;
 import org.horaapps.leafpic.data.sort.SortingMode;
 import org.horaapps.leafpic.data.sort.SortingOrder;
-import org.horaapps.leafpic.util.CardViewStyle;
-import org.horaapps.leafpic.util.ColorPalette;
-import org.horaapps.leafpic.util.ThemeHelper;
 import org.horaapps.leafpic.views.SquareRelativeLayout;
+import org.horaapps.liz.ThemeHelper;
+import org.horaapps.liz.ThemedAdapter;
+import org.horaapps.liz.ThemedViewHolder;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import butterknife.BindView;
@@ -41,11 +43,11 @@ import io.reactivex.subjects.PublishSubject;
 /**
  * Created by dnld on 1/7/16.
  */
-public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> {
+public class MediaAdapter extends ThemedAdapter<MediaAdapter.ViewHolder> {
 
-    private List<Media> media;
+    private ArrayList<Media> media;
 
-    private final PublishSubject<Media> onClickSubject = PublishSubject.create();
+    private final PublishSubject<Integer> onClickSubject = PublishSubject.create();
     private final PublishSubject<Media> onChangeSelectedSubject = PublishSubject.create();
 
     private int selectedCount = 0;
@@ -53,15 +55,23 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
     private SortingOrder sortingOrder;
     private SortingMode sortingMode;
 
-    private ThemeHelper theme;
-    private BitmapDrawable placeholder;
-    private CardViewStyle cvs;
+    private Drawable placeholder;
+
+    public MediaAdapter(Context context) {
+        super(context);
+        media = new ArrayList<>();
+        this.sortingMode = SortingMode.DATE;
+        this.sortingOrder = SortingOrder.DESCENDING;
+        placeholder = getThemeHelper().getPlaceHolder();
+        setHasStableIds(true);
+    }
 
     public MediaAdapter(Context context, SortingMode sortingMode, SortingOrder sortingOrder) {
+        super(context);
         media = new ArrayList<>();
-        updateTheme(ThemeHelper.getThemeHelper(context));
         this.sortingMode = sortingMode;
         this.sortingOrder = sortingOrder;
+        placeholder = getThemeHelper().getPlaceHolder();
         setHasStableIds(true);
     }
 
@@ -79,12 +89,9 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
 
     @Override
     public long getItemId(int position) {
-        return media.get(position).getPath().hashCode() ^ 1312;
+        return media.get(position).getUri().hashCode() ^ 1312;
     }
 
-    public SortingOrder sortingOrder() {
-        return sortingOrder;
-    }
 
     public void changeSortingOrder(SortingOrder sortingOrder) {
         this.sortingOrder = sortingOrder;
@@ -92,18 +99,14 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         notifyDataSetChanged();
     }
 
-    public SortingMode sortingMode() {
-        return sortingMode;
-    }
-
     public void changeSortingMode(SortingMode sortingMode) {
         this.sortingMode = sortingMode;
         sort();
     }
 
-    public List<Media> getSelected() {
+    public ArrayList<Media> getSelected() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            return media.stream().filter(Media::isSelected).collect(Collectors.toList());
+            return new ArrayList<>(media.stream().filter(Media::isSelected).collect(Collectors.toList()));
         } else {
             ArrayList<Media> arrayList = new ArrayList<>(selectedCount);
             for (Media m : media)
@@ -123,6 +126,10 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
                         return m;
         }
         return null;
+    }
+
+    public ArrayList<Media> getMedia() {
+        return media;
     }
 
 
@@ -146,12 +153,6 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         onChangeSelectedSubject.onNext(new Media());
     }
 
-    public void updateTheme(ThemeHelper theme) {
-        this.theme = theme;
-        placeholder = ((BitmapDrawable) theme.getPlaceHolder());
-        cvs = theme.getCardViewStyle();
-    }
-
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         return new ViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.card_photo, parent, false));
@@ -165,7 +166,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         return selectedCount > 0;
     }
 
-    public Observable<Media> getClicks() {
+    public Observable<Integer> getClicks() {
         return onClickSubject;
     }
 
@@ -178,9 +179,9 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
 
         Media f = media.get(position);
 
-        holder.path.setTag(f);
-
+        //holder.path.setTag(f);
         holder.icon.setVisibility(View.GONE);
+        holder.layout.setBackgroundColor(getThemeHelper().getPrimaryColor());
 
         if (f.isGif()) {
             Ion.with(holder.imageView.getContext())
@@ -188,15 +189,20 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
                     .intoImageView(holder.imageView);
             holder.gifIcon.setVisibility(View.VISIBLE);
         } else {
+
+            RequestOptions options = new RequestOptions()
+                    .signature(f.getSignature())
+                    .format(DecodeFormat.PREFER_ARGB_8888)
+                    .centerCrop()
+                    .placeholder(placeholder)
+                    //.animate(R.anim.fade_in)//TODO:DONT WORK WELL
+                    .diskCacheStrategy(DiskCacheStrategy.RESOURCE);
+
+
             Glide.with(holder.imageView.getContext())
                     .load(f.getUri())
-                    .asBitmap()
-                    .signature(f.getSignature())
-                    .centerCrop()
-                    .diskCacheStrategy(DiskCacheStrategy.RESULT)
+                    .apply(options)
                     .thumbnail(0.5f)
-                    //.placeholder(drawable)
-                    //.animate(R.anim.fade_in)//TODO:DONT WORK WELL
                     .into(holder.imageView);
             holder.gifIcon.setVisibility(View.GONE);
         }
@@ -205,15 +211,14 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
             holder.icon.setVisibility(View.VISIBLE);
             holder.path.setVisibility(View.VISIBLE);
             holder.path.setText(f.getName());
-            holder.path.setTextColor(ContextCompat.getColor(holder.path.getContext(), org.horaapps.leafpic.R.color.md_dark_primary_text));
+            /*holder.path.setTextColor(ContextCompat.getColor(holder.path.getContext(), R.color.md_dark_primary_text));
             holder.path.setBackgroundColor(
                     ColorPalette.getTransparentColor(
-                            ContextCompat.getColor(holder.path.getContext(), org.horaapps.leafpic.R.color.md_black_1000), 100));
-            holder.icon.setIcon(CommunityMaterial.Icon.cmd_play_circle);
+                            ContextCompat.getColor(holder.path.getContext(), R.color.md_black_1000), 100));*/
             //ANIMS
             holder.icon.animate().alpha(1).setDuration(250);
             holder.path.animate().alpha(1).setDuration(250);
-
+            holder.icon.setColor(getThemeHelper().getPrimaryColor());
         } else {
             holder.icon.setVisibility(View.GONE);
             holder.path.setVisibility(View.GONE);
@@ -227,9 +232,9 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
             holder.icon.setVisibility(View.VISIBLE);
             holder.imageView.setColorFilter(0x88000000, PorterDuff.Mode.SRC_ATOP);
             holder.layout.setPadding(15,15,15,15);
+            holder.icon.setColor(getThemeHelper().getPrimaryColor());
             //ANIMS
             holder.icon.animate().alpha(1).setDuration(250);
-            //holder.layout.setBackgroundColor(ThemeHelper.getPrimaryColor(holder.path.getContext()));
         } else {
             holder.imageView.clearColorFilter();
             holder.layout.setPadding(0,0,0,0);
@@ -241,7 +246,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
                 notifyItemChanged(position);
                 onChangeSelectedSubject.onNext(f);
             } else
-                onClickSubject.onNext(f);
+                onClickSubject.onNext(position);
         });
 
         holder.layout.setOnLongClickListener(v -> {
@@ -258,6 +263,18 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
 
             return true;
         });
+    }
+
+    public void remove(Media media) {
+        int i = this.media.indexOf(media);
+        this.media.remove(i);
+        notifyItemRemoved(i);
+    }
+
+    @Override
+    public void refreshTheme(ThemeHelper theme) {
+        placeholder = theme.getPlaceHolder();
+        //super.refreshTheme(theme);
     }
 
 
@@ -295,6 +312,13 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         }
     }
 
+    public void setupFor(Album album) {
+        media.clear();
+        changeSortingMode(album.settings.getSortingMode());
+        changeSortingOrder(album.settings.getSortingOrder());
+        notifyDataSetChanged();
+    }
+
     public void clear() {
         media.clear();
         notifyDataSetChanged();
@@ -317,7 +341,7 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         return media.size();
     }
 
-    static class ViewHolder extends RecyclerView.ViewHolder {
+    static class ViewHolder extends ThemedViewHolder {
         @BindView(R.id.photo_preview)
         ImageView imageView;
         @BindView(R.id.photo_path)
@@ -332,6 +356,12 @@ public class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.ViewHolder> 
         ViewHolder(View view) {
             super(view);
             ButterKnife.bind(this, view);
+        }
+
+        @Override
+        public void refreshTheme(ThemeHelper themeHelper) {
+            icon.setColor(Color.WHITE);
+            Log.wtf("asd", "asdasd");
         }
     }
 }

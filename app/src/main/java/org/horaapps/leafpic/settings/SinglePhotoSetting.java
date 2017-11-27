@@ -1,7 +1,6 @@
 package org.horaapps.leafpic.settings;
 
 import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.CardView;
@@ -11,11 +10,11 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.mikepenz.iconics.view.IconicsImageView;
+import com.orhanobut.hawk.Hawk;
 
 import org.horaapps.leafpic.R;
-import org.horaapps.leafpic.activities.base.ThemedActivity;
-import org.horaapps.leafpic.util.ColorPalette;
-import org.horaapps.leafpic.util.PreferenceUtil;
+import org.horaapps.liz.ColorPalette;
+import org.horaapps.liz.ThemedActivity;
 
 import uz.shift.colorpicker.LineColorPicker;
 
@@ -25,8 +24,8 @@ import uz.shift.colorpicker.LineColorPicker;
 
 public class SinglePhotoSetting extends ThemedSetting {
 
-    public SinglePhotoSetting(ThemedActivity activity, PreferenceUtil SP) {
-        super(activity, SP);
+    public SinglePhotoSetting(ThemedActivity activity) {
+        super(activity);
     }
 
     public void show() {
@@ -54,7 +53,7 @@ public class SinglePhotoSetting extends ThemedSetting {
 
         final LineColorPicker transparencyColorPicker = (LineColorPicker) dialogLayout.findViewById(R.id.pickerTransparent);
         transparencyColorPicker.setColors(ColorPalette.getTransparencyShadows(getActivity().getPrimaryColor()));
-        transparencyColorPicker.setSelectedColor(ColorPalette.getTransparentColor(getActivity().getPrimaryColor(), getActivity().getTransparency()));
+        transparencyColorPicker.setSelectedColor(ColorPalette.getTransparentColor(getActivity().getPrimaryColor(), 255 - Hawk.get(getActivity().getString(R.string.preference_transparency), 0)));
 
         /**TEXT VIEWS**/
         ((TextView) dialogLayout.findViewById(R.id.seek_bar_alpha_title)).setTextColor(getActivity().getTextColor());
@@ -64,14 +63,12 @@ public class SinglePhotoSetting extends ThemedSetting {
         dialogBuilder.setNeutralButton(getActivity().getString(R.string.cancel).toUpperCase(), null);
         dialogBuilder.setPositiveButton(getActivity().getString(R.string.ok_action).toUpperCase(), new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
-                SharedPreferences.Editor editor = getSP().getEditor();
                 boolean applyTheme = swApplyTheme.isChecked();
-                editor.putBoolean(getActivity().getString(R.string.preference_apply_theme_pager), applyTheme);
+                Hawk.put(getActivity().getString(R.string.preference_apply_theme_pager), applyTheme);
                 if (applyTheme) {
                     int c = Color.alpha(transparencyColorPicker.getColor());
-                    editor.putInt(getActivity().getString(R.string.preference_transparency), 255 - c);
+                    Hawk.put(getActivity().getString(R.string.preference_transparency), 255 - c);
                 }
-                editor.commit();
                 getActivity().updateTheme();
             }
         });

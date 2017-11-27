@@ -9,18 +9,20 @@ import android.media.ThumbnailUtils;
 import android.provider.MediaStore;
 import android.widget.Toast;
 
+import com.orhanobut.hawk.Hawk;
+
 import org.horaapps.leafpic.R;
 import org.horaapps.leafpic.activities.SplashScreen;
 import org.horaapps.leafpic.data.sort.SortingMode;
 import org.horaapps.leafpic.data.sort.SortingOrder;
-import org.horaapps.leafpic.util.PreferenceUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 import java.util.List;
 
-import static org.horaapps.leafpic.new_way.BitmapUtils.addWhiteBorder;
-import static org.horaapps.leafpic.new_way.BitmapUtils.getCroppedBitmap;
+import static org.horaapps.leafpic.util.BitmapUtils.addWhiteBorder;
+import static org.horaapps.leafpic.util.BitmapUtils.getCroppedBitmap;
 
 /**
  * Created by dnld on 3/25/17.
@@ -63,19 +65,19 @@ public class AlbumsHelper {
     }
 
     public static SortingMode getSortingMode(Context context) {
-        return SortingMode.fromValue(PreferenceUtil.getInt(context,"albums_sorting_mode", SortingMode.DATE.getValue()));
+        return SortingMode.fromValue(Hawk.get("albums_sorting_mode", SortingMode.DATE.getValue()));
     }
 
     public static SortingOrder getSortingOrder(Context context) {
-        return SortingOrder.fromValue(PreferenceUtil.getInt(context, "albums_sorting_order", SortingOrder.DESCENDING.getValue()));
+        return SortingOrder.fromValue(Hawk.get("albums_sorting_order", SortingOrder.DESCENDING.getValue()));
     }
 
     public static void setSortingMode(Context context, SortingMode sortingMode) {
-        PreferenceUtil.putInt(context, "albums_sorting_mode", sortingMode.getValue());
+        Hawk.put("albums_sorting_mode", sortingMode.getValue());
     }
 
     public static void setSortingOrder(Context context, SortingOrder sortingOrder) {
-        PreferenceUtil.putInt(context, "albums_sorting_order", sortingOrder.getValue());
+        Hawk.put("albums_sorting_order", sortingOrder.getValue());
     }
 
     public static void scanFile(Context context, String[] path) {  MediaScannerConnection.scanFile(context, path, null, null); }
@@ -105,7 +107,15 @@ public class AlbumsHelper {
     }
 
     public static boolean deleteAlbum(Album album, Context context) {
-        return ContentHelper.deleteFilesInFolder(context, new File(album.getPath()));
+        return StorageHelper.deleteFilesInFolder(context, new File(album.getPath()));
+    }
+
+    public static void saveLastHiddenPaths(ArrayList<String> list) {
+        Hawk.put("h", list);
+    }
+
+    public static ArrayList<String> getLastHiddenPaths() {
+        return Hawk.get("h", new ArrayList<>());
     }
 
 }

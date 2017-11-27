@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.horaapps.leafpic">
+    package="org.horaapps.leafpic"
+    android:installLocation="auto">
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -13,6 +14,8 @@
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
+    <uses-feature android:name="android.hardware.fingerprint"
+        android:required="false"/>
 
     <application
         android:allowBackup="true"
@@ -191,12 +194,12 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.NoActionBar" />
 
-        <meta-data
+        <!-- <meta-data
             android:name="org.horaapps.leafpic.CustomGlideModule"
-            android:value="GlideModule" />
+            android:value="GlideModule" /> -->
 
         <provider
-            android:name="android.support.v4.content.FileProvider"
+            android:name=".util.LegacyCompatFileProvider"
             android:authorities="${applicationId}.provider"
             android:exported="false"
             android:grantUriPermissions="true">

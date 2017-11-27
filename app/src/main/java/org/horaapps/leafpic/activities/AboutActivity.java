@@ -16,17 +16,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.Priority;
 import com.mikepenz.google_material_typeface_library.GoogleMaterial;
 import com.mikepenz.iconics.view.IconicsImageView;
+import com.orhanobut.hawk.Hawk;
 
 import org.horaapps.leafpic.BuildConfig;
 import org.horaapps.leafpic.R;
-import org.horaapps.leafpic.activities.base.ThemedActivity;
 import org.horaapps.leafpic.util.AlertDialogsHelper;
 import org.horaapps.leafpic.util.CustomTabService;
-import org.horaapps.leafpic.util.PreferenceUtil;
 import org.horaapps.leafpic.util.StringUtils;
+import org.horaapps.liz.ThemedActivity;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -38,7 +37,6 @@ public class AboutActivity extends ThemedActivity {
     private Toolbar toolbar;
     private CustomTabService cts;
     private ScrollView scr;
-    PreferenceUtil SP;
     int emojiEasterEggCount=0;
 
     @Override
@@ -48,7 +46,6 @@ public class AboutActivity extends ThemedActivity {
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         scr = (ScrollView)findViewById(R.id.aboutAct_scrollView);
         cts = new CustomTabService(AboutActivity.this);
-        SP = PreferenceUtil.getInstance(getApplicationContext());
 
         initUi();
         setUpActions();
@@ -156,11 +153,11 @@ public class AboutActivity extends ThemedActivity {
         emojiEasterEggCount++;
         if(emojiEasterEggCount > 3) {
             Toast.makeText(this,
-                    (SP.getInt("emoji_easter_egg",0)==0
+                    (Hawk.get("emoji_easter_egg", 0) == 0
                     ? this.getString(R.string.easter_egg_enable)
                     : this.getString(R.string.easter_egg_disable))
                     + " " + this.getString(R.string.emoji_easter_egg), Toast.LENGTH_SHORT).show();
-            SP.putInt("emoji_easter_egg", SP.getInt("emoji_easter_egg", 0) == 0 ? 1 : 0);
+            Hawk.put("emoji_easter_egg", Hawk.get("emoji_easter_egg", 0) == 0 ? 1 : 0);
             emojiEasterEggCount = 0;
         } else Toast.makeText(getBaseContext(), String.valueOf(emojiEasterEggCount), Toast.LENGTH_SHORT).show();
     }
@@ -181,28 +178,19 @@ public class AboutActivity extends ThemedActivity {
 
         Glide.with(this)
                 .load(R.drawable.donald_header)
-                //.placeholder(getPlaceHolder())
-                .priority(Priority.HIGH)
-                .animate(R.anim.fade_in)
                 .into((ImageView) findViewById(R.id.donald_header_img));
         Glide.with(this)
                 .load(R.drawable.donald_profile)
-                .priority(Priority.HIGH)
                 //.error(new IconicsDrawable(this, "gmd-person").sizeDp(90).color(getIconColor()).paddingDp(24))
-                .animate(R.anim.fade_in)
+
                 .into((CircleImageView) findViewById(R.id.donald_profile_img));
 
         Glide.with(this)
                 .load(R.drawable.gilbert_header)
-                .priority(Priority.HIGH)
-                //.placeholder(getPlaceHolder())
-                .animate(R.anim.fade_in)
                 .into((ImageView) findViewById(R.id.gilbert_header_img));
         Glide.with(this)
                 .load(R.drawable.gilbert_profile)
-                .priority(Priority.HIGH)
-                //.error(new IconicsDrawable(this, "gmd-person").sizeDp(90).color(getIconColor()).paddingDp(24))
-                .animate(R.anim.fade_in)
+                //.error(new IconicsDrawable(this, "gmd-person").sizeDp(90).color)
                 .into((CircleImageView) findViewById(R.id.gilbert_profile_img));
 
         ((TextView) findViewById(R.id.about_version_item_sub)).setText(BuildConfig.VERSION_NAME);

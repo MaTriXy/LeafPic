@@ -36,13 +36,13 @@ import com.mikepenz.google_material_typeface_library.GoogleMaterial;
 import com.mikepenz.iconics.IconicsDrawable;
 import com.mikepenz.iconics.view.IconicsImageView;
 
-import org.horaapps.leafpic.activities.base.ThemedActivity;
-import org.horaapps.leafpic.data.ContentHelper;
+import org.horaapps.leafpic.data.StorageHelper;
 import org.horaapps.leafpic.data.filter.FoldersFileFilter;
 import org.horaapps.leafpic.util.AlertDialogsHelper;
 import org.horaapps.leafpic.util.Measure;
-import org.horaapps.leafpic.util.ThemeHelper;
 import org.horaapps.leafpic.views.GridSpacingItemDecoration;
+import org.horaapps.liz.ThemeHelper;
+import org.horaapps.liz.ThemedActivity;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -82,8 +82,7 @@ public class SelectAlbumBuilder extends BottomSheetDialogFragment {
         return this;
     }
 
-    public SelectAlbumBuilder exploreMode(boolean enabled, boolean force) {
-        exploreMode = enabled;
+    public SelectAlbumBuilder force(boolean force) {
         forzed = force;
         return this;
     }
@@ -128,8 +127,8 @@ public class SelectAlbumBuilder extends BottomSheetDialogFragment {
         exploreModePanel = (LinearLayout) contentView.findViewById(R.id.ll_explore_mode_panel);
         imgExploreMode = (IconicsImageView) contentView.findViewById(R.id.toggle_hidden_icon);
 
-        theme = ThemeHelper.getThemeHelper(getContext());
-        sdCardPath = ContentHelper.getSdcardPath(getContext());
+        theme = ThemeHelper.getInstanceLoaded(getContext());
+        sdCardPath = StorageHelper.getSdcardPath(getContext());
 
         mRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
         mRecyclerView.addItemDecoration(new GridSpacingItemDecoration(2, Measure.pxToDp(3, getContext()), true));
@@ -147,15 +146,15 @@ public class SelectAlbumBuilder extends BottomSheetDialogFragment {
                     default:
                         // TODO: 12/11/16 check this plis
 //                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
-//                            DocumentFile documentFile = ContentHelper.getDocumentFile(getContext(), new File(ContentHelper.getExtSdCardPaths(getContext())[pos - 1]), true, false);
+//                            DocumentFile documentFile = StorageHelper.getDocumentFile(getContext(), new File(StorageHelper.getExtSdCardPaths(getContext())[pos - 1]), true, false);
 //                            if(documentFile != null){
-//                                displayContentFolder(new File(ContentHelper.getExtSdCardPaths(getContext())[pos - 1]));
+//                                displayContentFolder(new File(StorageHelper.getExtSdCardPaths(getContext())[pos - 1]));
 //                            } else {
 //                                Toast.makeText(getContext(), getString(R.string.no_permission), Toast.LENGTH_LONG).choseProvider();
 //                                spinner.setSelection(0);
 //                            }
 //                        } else {
-//                            displayContentFolder(new File(ContentHelper.getExtSdCardPaths(getContext())[pos - 1]));
+//                            displayContentFolder(new File(StorageHelper.getExtSdCardPaths(getContext())[pos - 1]));
 //                        }
                         break;
                 }
@@ -185,6 +184,7 @@ public class SelectAlbumBuilder extends BottomSheetDialogFragment {
         });
 
         ((TextView) contentView.findViewById(R.id.bottom_sheet_title)).setText(title);
+        ((IconicsImageView) contentView.findViewById(R.id.create_new_folder_icon)).setColor(theme.getIconColor());
 
         contentView.findViewById(R.id.rl_create_new_folder).setOnClickListener(new View.OnClickListener() {
             @Override
