@@ -165,7 +165,7 @@ public class SingleMediaActivity extends SharedMediaActivity {
                 .filter(media -> MediaFilter.getFilter(album.filterMode()).accept(media) && !media.equals(m))
                 .subscribe(ma -> {
                             int i = Collections.binarySearch(
-                                    list, ma, MediaComparators.getComparator(album.settings.getSortingMode(), album.settings.getSortingOrder()));
+                                    list, ma, MediaComparators.getComparator(album.settings));
                             if (i < 0) i = ~i;
                             list.add(i, ma);
                         },
@@ -174,8 +174,9 @@ public class SingleMediaActivity extends SharedMediaActivity {
                         },
                         () -> {
                             int i = Collections.binarySearch(
-                                    list, m, MediaComparators.getComparator(album.settings.getSortingMode(), album.settings.getSortingOrder()));
+                                    list, m, MediaComparators.getComparator(album.settings));
                             if (i < 0) i = ~i;
+
                             list.add(i, m);
                             media.clear();
                             media.addAll(list);
@@ -447,21 +448,15 @@ public class SingleMediaActivity extends SharedMediaActivity {
         switch (item.getItemId()) {
 
             case R.id.rotate_180:
-                if (!((ImageFragment) adapter.getRegisteredFragment(position)).rotatePicture(180)) {
-                    Toast.makeText(this, R.string.coming_soon, Toast.LENGTH_SHORT).show();
-                }
+                ((ImageFragment) adapter.getRegisteredFragment(position)).rotatePicture(180);
                 break;
 
             case R.id.rotate_right_90:
-                if (!((ImageFragment) adapter.getRegisteredFragment(position)).rotatePicture(90)) {
-                    Toast.makeText(this, R.string.coming_soon, Toast.LENGTH_SHORT).show();
-                }
+                ((ImageFragment) adapter.getRegisteredFragment(position)).rotatePicture(90);
                 break;
 
             case R.id.rotate_left_90:
-                if (!((ImageFragment) adapter.getRegisteredFragment(position)).rotatePicture(-90)) {
-                    Toast.makeText(this, R.string.coming_soon, Toast.LENGTH_SHORT).show();
-                }
+                ((ImageFragment) adapter.getRegisteredFragment(position)).rotatePicture(-90);
                 break;
 
 
