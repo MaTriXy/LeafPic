@@ -5,7 +5,7 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.util.Log;
+import android.support.annotation.NonNull;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,7 +17,7 @@ import com.bumptech.glide.load.DecodeFormat;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
 import com.mikepenz.community_material_typeface_library.CommunityMaterial;
-import com.mikepenz.iconics.view.IconicsImageView;
+import com.mikepenz.google_material_typeface_library.GoogleMaterial;
 
 import org.horaapps.leafpic.R;
 import org.horaapps.leafpic.data.Album;
@@ -25,64 +25,51 @@ import org.horaapps.leafpic.data.Media;
 import org.horaapps.leafpic.data.sort.MediaComparators;
 import org.horaapps.leafpic.data.sort.SortingMode;
 import org.horaapps.leafpic.data.sort.SortingOrder;
+import org.horaapps.leafpic.items.ActionsListener;
 import org.horaapps.leafpic.views.SquareRelativeLayout;
 import org.horaapps.liz.ThemeHelper;
 import org.horaapps.liz.ThemedAdapter;
 import org.horaapps.liz.ThemedViewHolder;
+import org.horaapps.liz.ui.ThemedIcon;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import io.reactivex.Observable;
-import io.reactivex.subjects.PublishSubject;
 
 /**
- * Created by dnld on 1/7/16.
+ * Adapter used to display Media Items.
+ *
+ * TODO: This class needs a major cleanup. Remove code from onBindViewHolder!
  */
 public class MediaAdapter extends ThemedAdapter<MediaAdapter.ViewHolder> {
 
-    private ArrayList<Media> media;
-
-    private final PublishSubject<Integer> onClickSubject = PublishSubject.create();
-    private final PublishSubject<Media> onChangeSelectedSubject = PublishSubject.create();
-
+    private final ArrayList<Media> media;
     private int selectedCount = 0;
 
     private SortingOrder sortingOrder;
     private SortingMode sortingMode;
 
     private Drawable placeholder;
+    private final ActionsListener actionsListener;
 
-    public MediaAdapter(Context context) {
-        super(context);
-        media = new ArrayList<>();
-        this.sortingMode = SortingMode.DATE;
-        this.sortingOrder = SortingOrder.DESCENDING;
-        placeholder = getThemeHelper().getPlaceHolder();
-        setHasStableIds(true);
-    }
+    private boolean isSelecting = false;
 
-    public MediaAdapter(Context context, SortingMode sortingMode, SortingOrder sortingOrder) {
+    public MediaAdapter(Context context, SortingMode sortingMode, SortingOrder sortingOrder, ActionsListener actionsListener) {
         super(context);
         media = new ArrayList<>();
         this.sortingMode = sortingMode;
         this.sortingOrder = sortingOrder;
         placeholder = getThemeHelper().getPlaceHolder();
         setHasStableIds(true);
+        this.actionsListener = actionsListener;
     }
 
-    public void sort() {
-        /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-            media.sort(AlbumsComparators.getComparator(sortingMode));
-            //media = media.stream().sorted(AlbumsComparators.getComparator(sortingMode)).collect(Collectors.toList());
-        else Collections.sort(media, AlbumsComparators.getComparator(sortingMode));*/
+    private void sort() {
         Collections.sort(media, MediaComparators.getComparator(sortingMode, sortingOrder));
-        /*if (sortingOrder.equals(SortingOrder.DESCENDING))
-            reverseOrder();*/
-
         notifyDataSetChanged();
     }
 
@@ -90,7 +77,6 @@ public class MediaAdapter extends ThemedAdapter<MediaAdapter.ViewHolder> {
     public long getItemId(int position) {
         return media.get(position).getUri().hashCode() ^ 1312;
     }
-
 
     public void changeSortingOrder(SortingOrder sortingOrder) {
         this.sortingOrder = sortingOrder;
@@ -131,7 +117,6 @@ public class MediaAdapter extends ThemedAdapter<MediaAdapter.ViewHolder> {
         return media;
     }
 
-
     public int getSelectedCount() {
         return selectedCount;
     }
@@ -141,15 +126,21 @@ public class MediaAdapter extends ThemedAdapter<MediaAdapter.ViewHolder> {
             if (media.get(i).setSelected(true))
                 notifyItemChanged(i);
         selectedCount = media.size();
-        onChangeSelectedSubject.onNext(new Media());
+        startSelection();
     }
 
-    public void clearSelected() {
-        for (int i = 0; i < media.size(); i++)
-            if (media.get(i).setSelected(false))
+    public boolean clearSelected() {
+        boolean changed = true;
+        for (int i = 0; i < media.size(); i++) {
+            boolean b = media.get(i).setSelected(false);
+            if (b)
                 notifyItemChanged(i);
+            changed &= b;
+        }
+
         selectedCount = 0;
-        onChangeSelectedSubject.onNext(new Media());
+        stopSelection();
+        return changed;
     }
 
     @Override
@@ -159,28 +150,32 @@ public class MediaAdapter extends ThemedAdapter<MediaAdapter.ViewHolder> {
 
     private void notifySelected(boolean increase) {
         selectedCount += increase ? 1 : -1;
+        actionsListener.onSelectionCountChanged(selectedCount, getItemCount());
+
+        if (selectedCount == 0 && isSelecting) stopSelection();
+        else if (selectedCount > 0 && !isSelecting) startSelection();
+    }
+
+    private void startSelection() {
+        isSelecting = true;
+        actionsListener.onSelectMode(true);
+    }
+
+    private void stopSelection() {
+        isSelecting = false;
+        actionsListener.onSelectMode(false);
     }
 
     public boolean selecting() {
-        return selectedCount > 0;
-    }
-
-    public Observable<Integer> getClicks() {
-        return onClickSubject;
-    }
-
-    public Observable<Media> getSelectedClicks() {
-        return onChangeSelectedSubject;
+        return isSelecting;
     }
 
     @Override
-    public void onBindViewHolder(final ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull final ViewHolder holder, int position) {
 
         Media f = media.get(position);
-
-        //holder.path.setTag(f);
         holder.icon.setVisibility(View.GONE);
-        holder.layout.setBackgroundColor(getThemeHelper().getPrimaryColor());
+
 
         holder.gifIcon.setVisibility(f.isGif() ? View.VISIBLE : View.GONE);
 
@@ -189,7 +184,6 @@ public class MediaAdapter extends ThemedAdapter<MediaAdapter.ViewHolder> {
                 .format(DecodeFormat.PREFER_RGB_565)
                 .centerCrop()
                 .placeholder(placeholder)
-                //.animate(R.anim.fade_in)//TODO:DONT WORK WELL
                 .diskCacheStrategy(DiskCacheStrategy.RESOURCE);
 
 
@@ -199,7 +193,8 @@ public class MediaAdapter extends ThemedAdapter<MediaAdapter.ViewHolder> {
                 .thumbnail(0.5f)
                 .into(holder.imageView);
 
-        if(f.isVideo()) {
+        if (f.isVideo()) {
+            holder.icon.setIcon(GoogleMaterial.Icon.gmd_play_circle_filled);
             holder.icon.setVisibility(View.VISIBLE);
             holder.path.setVisibility(View.VISIBLE);
             holder.path.setText(f.getName());
@@ -210,7 +205,6 @@ public class MediaAdapter extends ThemedAdapter<MediaAdapter.ViewHolder> {
             //ANIMS
             holder.icon.animate().alpha(1).setDuration(250);
             holder.path.animate().alpha(1).setDuration(250);
-            holder.icon.setColor(getThemeHelper().getPrimaryColor());
         } else {
             holder.icon.setVisibility(View.GONE);
             holder.path.setVisibility(View.GONE);
@@ -223,35 +217,30 @@ public class MediaAdapter extends ThemedAdapter<MediaAdapter.ViewHolder> {
             holder.icon.setIcon(CommunityMaterial.Icon.cmd_check);
             holder.icon.setVisibility(View.VISIBLE);
             holder.imageView.setColorFilter(0x88000000, PorterDuff.Mode.SRC_ATOP);
-            holder.layout.setPadding(15,15,15,15);
-            holder.icon.setColor(getThemeHelper().getPrimaryColor());
+            holder.layout.setPadding(15, 15, 15, 15);
             //ANIMS
             holder.icon.animate().alpha(1).setDuration(250);
         } else {
             holder.imageView.clearColorFilter();
-            holder.layout.setPadding(0,0,0,0);
+            holder.layout.setPadding(0, 0, 0, 0);
         }
 
         holder.layout.setOnClickListener(v -> {
             if (selecting()) {
                 notifySelected(f.toggleSelected());
-                notifyItemChanged(position);
-                onChangeSelectedSubject.onNext(f);
+                notifyItemChanged(holder.getAdapterPosition());
             } else
-                onClickSubject.onNext(position);
+                actionsListener.onItemSelected(holder.getAdapterPosition());
         });
 
         holder.layout.setOnLongClickListener(v -> {
             if (!selecting()) {
                 // If it is the first long press
                 notifySelected(f.toggleSelected());
-                notifyItemChanged(position);
-                onChangeSelectedSubject.onNext(f);
+                notifyItemChanged(holder.getAdapterPosition());
             } else {
                 selectAllUpTo(f);
-                onChangeSelectedSubject.onNext(new Media());
             }
-
 
             return true;
         });
@@ -261,6 +250,28 @@ public class MediaAdapter extends ThemedAdapter<MediaAdapter.ViewHolder> {
         int i = this.media.indexOf(media);
         this.media.remove(i);
         notifyItemRemoved(i);
+    }
+
+    public void removeSelectedMedia(Media media) {
+        int i = this.media.indexOf(media);
+        this.media.remove(i);
+        notifyItemRemoved(i);
+
+//        this.notifySelected(false);
+    }
+
+    public void invalidateSelectedCount() {
+        int c = 0;
+        for (Media m : this.media) {
+            c += m.isSelected() ? 1 : 0;
+        }
+
+        this.selectedCount = c;
+
+        if (this.selectedCount == 0) stopSelection();
+        else {
+            this.actionsListener.onSelectionCountChanged(selectedCount, media.size());
+        }
     }
 
     @Override
@@ -316,6 +327,12 @@ public class MediaAdapter extends ThemedAdapter<MediaAdapter.ViewHolder> {
         notifyDataSetChanged();
     }
 
+    public void setMedia(@NonNull List<Media> mediaList) {
+        media.clear();
+        media.addAll(mediaList);
+        notifyDataSetChanged();
+    }
+
     public int add(Media album) {
         int i = Collections.binarySearch(
                 media, album, MediaComparators.getComparator(sortingMode, sortingOrder));
@@ -339,9 +356,9 @@ public class MediaAdapter extends ThemedAdapter<MediaAdapter.ViewHolder> {
         @BindView(R.id.photo_path)
         TextView path;
         @BindView(R.id.gif_icon)
-        IconicsImageView gifIcon;
+        ThemedIcon gifIcon;
         @BindView(R.id.icon)
-        IconicsImageView icon;
+        ThemedIcon icon;
         @BindView(R.id.media_card_layout)
         SquareRelativeLayout layout;
 
@@ -353,7 +370,6 @@ public class MediaAdapter extends ThemedAdapter<MediaAdapter.ViewHolder> {
         @Override
         public void refreshTheme(ThemeHelper themeHelper) {
             icon.setColor(Color.WHITE);
-            Log.wtf("asd", "asdasd");
         }
     }
 }
